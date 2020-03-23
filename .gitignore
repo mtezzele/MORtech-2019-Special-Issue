@@ -2,6 +2,7 @@
 **/linux**
 **/linux*
 **/ITHACAoutput*
+**/defGeom
 *.o
 *.so
 *.exe

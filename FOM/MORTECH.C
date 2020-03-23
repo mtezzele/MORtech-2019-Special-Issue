@@ -31,11 +31,8 @@ Description
 #include "fvCFD.H"
 #include "IOmanip.H"
 #include "unsteadyNS.H"
-#include "ITHACAPOD.H"
 #include "ITHACAutilities.H"
 #include <Eigen/Dense>
-#include "DEIM.H"
-#include "EigenFunctions.H"
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include "pointMesh.H" //Perhaps not needed..?
@@ -73,7 +70,7 @@ double f4(double chord, double x)
 
 double f5(double chord, double x)
 {
-double res = chord * (std::pow((x + 0.5) / chord,
+    double res = chord * (std::pow((x + 0.5) / chord,
                                    0.5) * (1 - (x + 0.5) / chord)) / (std::exp(10 * (x + 0.5) / chord));
     return res;
 }
@@ -136,14 +133,6 @@ class NS_geom_par : public unsteadyNS
         // Axis of rotation in case of changing angle of attack
         vector axis;
 
-        // Pointers to nuT and nuTilda at the initial "time"
-        autoPtr<volScalarField> _nut0;
-        autoPtr<volScalarField> _nuTilda0;
-
-        // Pointers to nuT and nuTilda
-        autoPtr<volScalarField> _nut;
-        autoPtr<volScalarField> _nuTilda;
-
         /// dictionary to store input output infos
         IOdictionary* dyndict;
 
@@ -160,6 +149,7 @@ class NS_geom_par : public unsteadyNS
 
         // labelList to identify the moving patches
         labelList movingIDs;
+
         // Coordinates of the moving points in the reference configuration
         List<vector> x0;
 
@@ -172,60 +162,27 @@ class NS_geom_par : public unsteadyNS
         labelList bot0_ind;
 
         // Function to solve the offline problem
-        void OfflineSolve(Eigen::MatrixXd parTop, Eigen::MatrixXd parBot, word Folder)
+        void defGeometries(Eigen::MatrixXd parTop, Eigen::MatrixXd parBot, word Folder)
         {
             fvMesh& mesh = _mesh();
-            Time& runTime = _runTime();
 
-            if (offline)
+            for (int k = 0; k < parTop.rows(); k++)
             {
-                ITHACAstream::read_fields(Ufield, U, "./ITHACAoutput/Offline/");
-                ITHACAstream::read_fields(Pfield, p, "./ITHACAoutput/Offline/");
-                volVectorField Usup("Usup", U);
-                ITHACAstream::read_fields(supfield, Usup, "./ITHACAoutput/supfield/");
-            }
-
-            else
-            {
-                for (int k = 0; k < parTop.rows(); k++)
-                {
-                    List<scalar> par(1);
-                    mkDir("./defGeom/"+name(k+1));
-                    system("cp -r constant defGeom/"+name(k+1)+"/constant");
-                    system("cp -r system defGeom/"+name(k+1)+"/system");
-                    system("cp -r 0 defGeom/"+name(k+1)+"/0");
-                    updateMesh2(parTop.row(k), parBot.row(k));
-                    ITHACAstream::writePoints(mesh.points(), Folder, name(k + 1) + "/polyMesh/");
-                    ITHACAstream::writePoints(mesh.points(), "defGeom", name(k + 1) + "/constant/polyMesh/");
-                    ITHACAstream::exportSolution(U, name(k + 1), Folder);
-                    ITHACAstream::exportSolution(p, name(k + 1), Folder);
-                }
+                List<scalar> par(1);
+                mkDir("./defGeom/" + name(k + 1));
+                system("cp -r constant defGeom/" + name(k + 1) + "/constant");
+                system("cp -r system defGeom/" + name(k + 1) + "/system");
+                system("cp -r 0 defGeom/" + name(k + 1) + "/0");
+                updateMesh(parTop.row(k), parBot.row(k));
+                ITHACAstream::writePoints(mesh.points(), Folder, name(k + 1) + "/polyMesh/");
+                ITHACAstream::writePoints(mesh.points(), "defGeom",
+                                          name(k + 1) + "/constant/polyMesh/");
+                ITHACAstream::exportSolution(U, name(k + 1), Folder);
+                ITHACAstream::exportSolution(p, name(k + 1), Folder);
             }
         };
 
-        void restart()
-        {
-            fvMesh& mesh = _mesh();
-            volScalarField& p = _p();
-            volVectorField& U = _U();
-            surfaceScalarField& phi = _phi();
-            p = _p0();
-            U = _U0();
-            phi = _phi0();
-        }
-
-        void updateMesh(double par)
-        {
-            fvMesh& mesh = _mesh();
-            mesh.movePoints(point0);
-            List<vector> wing0_cur = ITHACAutilities::rotatePoints(wing0, axis, par);
-            ITHACAutilities::setIndices2Value(wing0_ind, wing0_cur, movingIDs, curX);
-            ms->setMotion(curX - x0);
-            mesh.movePoints(ms->curPoints());
-            mesh.moving(false);
-        }
-
-        void updateMesh2(Eigen::MatrixXd parTop, Eigen::MatrixXd parBot)
+        void updateMesh(Eigen::MatrixXd parTop, Eigen::MatrixXd parBot)
         {
             fvMesh& mesh = _mesh();
             mesh.movePoints(point0);
@@ -245,17 +202,11 @@ class NS_geom_par : public unsteadyNS
 int main(int argc, char* argv[])
 {
     NS_geom_par example(argc, argv);
-    example.startTime = 0;
-    example.finalTime = 10;
-    example.timeStep = 0.001;
-    example.writeEvery = 0.1;
-    Eigen::MatrixXd pars;
-    cnpy::load(pars, "new_samples_full_from_70_with_normal.npy");
-    Eigen::MatrixXd parTop = pars.leftCols(5);
-    Eigen::MatrixXd parBot = pars.rightCols(5);
-    cnpy::save(parTop,"newparTop_normal.npy");
-    cnpy::save(parBot,"newparBot_normal.npy");
-    example.OfflineSolve(parTop, parBot, "./ITHACAoutput/Offline/");
+    Eigen::MatrixXd parTop;
+    Eigen::MatrixXd parBot;
+    cnpy::load(parTop, "../parameters/parTop.npy");
+    cnpy::load(parBot, "../parameters/parBot.npy");
+    example.defGeometries(parTop, parBot, "./ITHACAoutput/Offline/");
     return 0;
 }
 
