@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     | Website:  https://openfoam.org
+    \\  /    A nd           | Version:  6
+     \\/     M anipulation  |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      controlDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+application     simpleFoam;
+
+startFrom       latestTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         30;
+
+deltaT          1e-3;
+
+writeControl    timeStep;
+
+writeInterval   2000;
+
+purgeWrite      0;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;
+
+
+functions
+{
+forceCoeffs1
+{
+    type            forceCoeffs;
+    libs            ("libforces.so");
+    writeControl    timeStep;
+    timeInterval    10;
+    log             yes;
+    patches         (top bottom);
+    rho rhoInf;
+    p p;
+    U U;
+    rhoInf          1.225;           // Redundant for incompressible
+    liftDir         (0 1 0);
+    dragDir         (1 0 0);
+    CofR            (0 0 0);  // Axle midpoint on ground
+    pitchAxis       (0 0 1);
+    magUInf         1;
+    lRef            1;        // Wheelbase length
+    Aref            0.2;        // Estimated
+    /*
+    binData
+    {
+        nBin        20;          // output data into 20 bins
+        direction   (1 0 0);     // bin direction
+        cumulative  yes;
+    }
+    */
+}
+}
+
+// ************************************************************************* //
