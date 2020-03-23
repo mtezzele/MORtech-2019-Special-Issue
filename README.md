@@ -4,7 +4,7 @@ All the material to reproduce the results of the work titled: "Enhancing CFD pre
 
 ### Prerequisites
 In order to reproduce the results reported in our work one requires
-* **OpenFOAM** The results have been produced with [OpenFOAM v6](https://openfoam.org/version/6/) but the codes compile and work also with other versions of OpenFOAM such as [OpenFOAM v6](https://openfoam.org/version/5-0/), [OpenFOAM v1812](https://www.openfoam.com/releases/openfoam-v1812/) and [OpenFOAM v1906](https://www.openfoam.com/releases/openfoam-v1906/);
+* **OpenFOAM** The results have been produced with [OpenFOAM v6](https://openfoam.org/version/6/) but the codes compile and work also with other versions of OpenFOAM such as [OpenFOAM v5](https://openfoam.org/version/5-0/), [OpenFOAM v1812](https://www.openfoam.com/releases/openfoam-v1812/) and [OpenFOAM v1906](https://www.openfoam.com/releases/openfoam-v1906/);
 * **ITHACA-FV** which is an open-source library available on [gitHub](https://github.com/mathLab/ITHACA-FV) for model order reduction. In this work the library is not used in its full potential but only to exploit some of the available tools for mesh motion and to have a practical input-output interface to the binary python files which are used in the preprocessing and online stages. 
 
 ### Usage
